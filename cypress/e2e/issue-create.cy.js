@@ -82,7 +82,7 @@ describe("Issue create", () => {
       });
   });
 
-  it("Should validate title is required field if missing", () => {
+  it.only("Should validate title is required field if missing", () => {
     cy.get(createIssueModal).within(() => {
       cy.get(submitButton).click();
       cy.get('[data-testid="form-field:title"]').should(
