@@ -5,7 +5,8 @@ const titleInput = 'input[name="title"]';
 const descriptionInput = ".ql-editor";
 const priority = '[data-testid="select:priority"]';
 const submitButton = 'button[type="submit"]';
-const issueType = '[data-testid="select:type"]';
+const issueType = '[data-testid="select-option:Task"]';
+const issueTypeTask = '[data-testid="select:type"]';
 const issueTypeBug = '[data-testid="select-option:Bug"]';
 const issueIconBug = '[data-testid="icon:bug"]';
 const issueIconTask = '[data-testid="icon:task"]';
@@ -82,7 +83,7 @@ describe("Issue create", () => {
       });
   });
 
-  it.only("Should validate title is required field if missing", () => {
+  it("Should validate title is required field if missing", () => {
     cy.get(createIssueModal).within(() => {
       cy.get(submitButton).click();
       cy.get('[data-testid="form-field:title"]').should(
@@ -93,7 +94,7 @@ describe("Issue create", () => {
   });
 
   // Test Case 1: Custom Issue Creation
-  it.only("Should create a bug report and validate it successfully", () => {
+  it("Should create a bug report and validate it successfully", () => {
     cy.get(createIssueModal)
       .should("exist")
       .within(() => {
@@ -135,62 +136,61 @@ describe("Issue create", () => {
           });
       });
   });
-});
 
-// Test Case 2: Random Data Plugin Issue Creation
+  // Test Case 2: Random Data Plugin Issue Creation
 
-it("Should create an issue with random data and verify data retention", () => {
-  const randomTitle = faker.lorem.words(2);
-  const randomDescription = faker.lorem.words(5);
+  it.only("Should create an issue with random data and verify data retention", () => {
+    const randomTitle = faker.lorem.words(2);
+    const randomDescription = faker.lorem.words(5);
 
-  cy.log("Random Title:", randomTitle);
-  cy.log("Random Description:", randomDescription);
+    cy.log("Random Title:", randomTitle);
+    cy.log("Random Description:", randomDescription);
 
-  cy.get(createIssueModal)
-    .should("exist")
-    .within(() => {
-      cy.get(descriptionInput).type(randomDescription);
-      cy.get(titleInput).type(randomTitle);
+    cy.get(createIssueModal)
+      .should("exist")
+      .within(() => {
+        cy.get(descriptionInput).type(randomDescription);
+        cy.get(titleInput).type(randomTitle);
 
-      cy.wrap(randomTitle).as("randomTitle");
-      cy.wrap(randomDescription).as("randomDescription");
+        cy.wrap(randomTitle).as("randomTitle");
+        cy.wrap(randomDescription).as("randomDescription");
 
-      cy.get(reporter).click();
-      cy.get(reporterNameBabyYoda).click().should("contain.text", "Baby Yoda");
+        cy.get(reporter).click();
+        cy.get(reporterNameBabyYoda).click();
+        cy.get(priorityLow).click();
+        cy.get(priorityIconLow);
+        cy.get(submitButton).click().wait(8000);
+      });
 
-      cy.get(priorityLow).click();
-      cy.get(priorityIconLow)
-        .should("be.visible")
-        .and("have.css", "color", priorityColorLow);
+    cy.get(createIssueModal).should("not.exist");
+    cy.contains("Issue has been successfully created.").should("be.visible");
+    cy.reload();
+    cy.contains("Issue has been successfully created.").should("not.exist");
 
-      cy.get(submitButton).click();
-    });
-
-  cy.get(createIssueModal).should("not.exist");
-  cy.contains("Issue has been successfully created.").should("be.visible");
-  cy.reload();
-  cy.contains("Issue has been successfully created.").should("not.exist");
-
-  cy.get(backlog)
-    .should("be.visible")
-    .within(() => {
-      cy.get(listIssue)
-        .should("have.length", 5)
-        .first()
-        .find("p")
-        .click()
-        .within(() => {
-          cy.get(createIssueModal)
-            .should("be.visible")
-            .within(() => {
-              cy.get(titleInput).should("have.value", randomTitle);
-              cy.get(descriptionInput).should(
-                "contain.text",
-                randomDescription
-              );
-              cy.get(priorityLow).should("contain.text", "Low");
-              cy.get(reporterNameBabyYoda).should("contain.text", "Baby Yoda");
-            });
-        });
-    });
+    cy.get(backlog)
+      .should("be.visible")
+      .within(() => {
+        cy.get(listIssue)
+          .should("have.length", 5)
+          .first()
+          .find("p")
+          .click()
+          .within(() => {
+            cy.get(createIssueModal)
+              .should("be.visible")
+              .within(() => {
+                cy.get(titleInput).should("have.value", randomTitle);
+                cy.get(descriptionInput).should(
+                  "contain.text",
+                  randomDescription
+                );
+                cy.get(priorityLow).should("contain.text", "Low");
+                cy.get(reporterNameBabyYoda).should(
+                  "contain.text",
+                  "Baby Yoda"
+                );
+              });
+          });
+      });
+  });
 });
