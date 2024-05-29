@@ -1,16 +1,20 @@
 import { faker } from "@faker-js/faker";
 
 const createIssueModal = '[data-testid="modal:issue-create"]';
+const issueDetails = '[data-testid="modal:issue-details]';
+const confirmModal = '[data-testid="modal:confirm]';
 const titleInput = 'input[name="title"]';
+const textarea = '[placeholder="Short summary"]';
 const descriptionInput = ".ql-editor";
-const priority = '[data-testid="select:priority"]';
 const submitButton = 'button[type="submit"]';
-const issueType = '[data-testid="select-option:Task"]';
+const issueType = '[data-testid="select-option:task"]';
 const issueTypeTask = '[data-testid="select:type"]';
-const issueTypeBug = '[data-testid="select-option:Bug"]';
+const issueTypeBug = '[data-testid="select-option:bug"]';
+const issueTypeStory = '[data-testid="select-option:story"]';
 const issueIconBug = '[data-testid="icon:bug"]';
 const issueIconTask = '[data-testid="icon:task"]';
 const assignee = '[data-testid="form-field:userIds"]';
+const title = '[data-testid="form-field:title"]';
 const selectAssignee = '[data-testid="select:userIds"]';
 const assigneeNameLordGaben = '[data-testid="select-option:Lord Gaben"]';
 const reporter = '[data-testid="select:reporterId"]';
@@ -18,7 +22,9 @@ const reporterNamePickleRick = '[data-testid="select-option:Pickle Rick"]';
 const backlog = '[data-testid="board-list:backlog"]';
 const listIssue = '[data-testid="list-issue"]';
 const avatarLordGaben = '[data-testid="avatar:Lord Gaben"]';
+const avatarPickleRick = '[data-testid="avatar:Pickle Rick"]';
 const reporterNameBabyYoda = '[data-testid="select-option:Baby Yoda"]';
+const priority = '[data-testid="select:priority"]';
 const priorityLow = '[data-testid="select-option:Low"]';
 const priorityIconLow = '[data-testid="icon:arrow-down"]';
 const priorityColorLow = "rgb(45, 135, 56)";
@@ -34,50 +40,45 @@ describe("Issue create", () => {
   beforeEach(() => {
     cy.visit("/project/board");
     cy.url()
-      .wait(5000)
       .should("include", "project/board")
       .then((url) => {
-        cy.visit(`${url}?modal-issue-create=true`).wait(5000);
+        cy.visit(`${url}?modal-issue-create=true`);
       });
   });
 
   it("Should create an issue and validate it successfully", () => {
-    cy.get(createIssueModal)
+    cy.get(createIssueModal) // Open issue creation modal
       .should("exist")
       .within(() => {
-        cy.get(descriptionInput).wait(2000).type("TEST_DESCRIPTION");
-        cy.get(descriptionInput).should("contain.text", "TEST_DESCRIPTION");
-        cy.get(titleInput)
-          .wait(2000)
-          .type("TEST_TITLE")
-          .should("have.value", "TEST_TITLE");
-        cy.get(issueType).click();
-        cy.get('[data-testid="select-option:Story"]').click();
-        cy.get(reporter).click();
+        cy.get(descriptionInput).wait(2000).type("TEST_DESCRIPTION").wait(2000); // Enter description
+        cy.get(descriptionInput).should("contain.text", "TEST_DESCRIPTION"); // Validate description
+        cy.get(titleInput).wait(2000).type("TEST_TITLE").wait(2000); // Enter title
+        cy.get(titleInput).should("have.value", "TEST_TITLE"); // Validate title
+        cy.get(issueType).click(); // Select issue type and choose "Story"
+        cy.get(issueTypeStory);
+        cy.get(reporter).click(); // Select reporter Yoda
         cy.get(reporterNameBabyYoda).click();
-        cy.get(assignee).click();
+        cy.get(assignee).click(); // Select assignee Pickle Rick
         cy.get(reporterNamePickleRick).click();
         cy.get(submitButton).click().wait(10000);
       });
 
-    cy.get(createIssueModal).should("not.exist");
-    cy.contains("Issue has been successfully created.").should("be.visible");
+    cy.get(createIssueModal).should("not.exist"); // Validate, that issue creation modal is no longer displayed
+    cy.contains("Issue has been successfully created.").should("be.visible"); // Validate, that success message is displayed
     cy.reload();
-    cy.contains("Issue has been successfully created.").should("not.exist");
+    cy.contains("Issue has been successfully created.").should("not.exist"); // Validate, that message is not displayed after page reload
 
-    cy.get(backlog)
-      .should("be.visible")
+    cy.get(backlog) // Open backlog selector
+      .should("be.visible") // Validate, that it is displayed
       .within(() => {
-        cy.get(listIssue)
-          .should("have.length", 5)
-          .first()
+        cy.get(listIssue) // Open the issues list slector
+          .should("have.length", 5) // Validate, it has 5 items listed
+          .first() // Select first of 5 items
           .within(() => {
-            cy.contains("p", "TEST_TITLE")
-              .siblings()
+            cy.contains("p", "TEST_TITLE") // Validate, that the title is "TEST_TITLE"
+              .siblings() // Selects all sibling elements of the found <p> element. Sibling elements are those that share the same parent.
               .within(() => {
-                cy.get('[data-testid="avatar:Pickle Rick"]').should(
-                  "be.visible"
-                );
+                cy.get(avatarPickleRick).should("be.visible"); // Check that Pickle Rick avatar is displayed
               });
           });
       });
@@ -85,29 +86,28 @@ describe("Issue create", () => {
 
   it("Should validate title is required field if missing", () => {
     cy.get(createIssueModal).within(() => {
-      cy.get(submitButton).click();
-      cy.get('[data-testid="form-field:title"]').should(
-        "contain.text",
-        "This field is required"
-      );
+      //Open issue creation modal
+      cy.get(submitButton).click(); // Try to submit issue without data
+      cy.get(title).should("contain.text", "This field is required"); // Validate, that error message is displayed
     });
   });
 
   // Test Case 1: Custom Issue Creation
   it("Should create a bug report and validate it successfully", () => {
-    cy.get(createIssueModal)
+    cy.get(createIssueModal) //Open issue creation modal
       .should("exist")
       .within(() => {
-        cy.get(descriptionInput)
-          .type("My bug description")
+        cy.get(descriptionInput) // Open description selector
+          .type("My bug description") // Enter description
           .wait(3000)
-          .should("contain.text", "My bug description");
-        cy.get(titleInput).type("Bug").wait(3000).should("have.value", "Bug");
-        cy.get(issueType).click();
-        cy.get(issueTypeBug).click();
-        cy.get(priority).click();
-        cy.get(priorityHighest).click();
-        cy.get(priorityIconHighest);
+          .should("contain.text", "My bug description"); // Validate that the descritption field contains entered data
+        cy.get(titleInput).type("Bug").wait(3000).should("have.value", "Bug"); // Open title selector and type "Bug" and validate, that data was retained in field
+        cy.get(issueType).click(); // Open issue type selector
+        cy.get(issueTypeBug).click(); // Select Bug as type
+        cy.get(priority).click(); // Open priority selector
+        cy.get(priorityHighest)
+          .click()
+          .should("have.value", priorityIconHighest); // Choose highest priority and validate with the icon change
         cy.get(reporter).click();
         cy.get(reporterNamePickleRick).click();
         cy.get(assignee).click();
@@ -138,28 +138,23 @@ describe("Issue create", () => {
   });
 
   // Test Case 2: Random Data Plugin Issue Creation
-
-  it.only("Should create an issue with random data and verify data retention", () => {
+  it("Should create an issue with random data and verify data retention", () => {
     const randomTitle = faker.lorem.words(2);
     const randomDescription = faker.lorem.words(5);
-
-    cy.log("Random Title:", randomTitle);
-    cy.log("Random Description:", randomDescription);
 
     cy.get(createIssueModal)
       .should("exist")
       .within(() => {
+        cy.get(issueType).should("have.value", "Task");
         cy.get(descriptionInput).type(randomDescription);
         cy.get(titleInput).type(randomTitle);
-
+        cy.log("Random Title:", randomTitle);
+        cy.log("Random Description:", randomDescription);
         cy.wrap(randomTitle).as("randomTitle");
         cy.wrap(randomDescription).as("randomDescription");
-
-        cy.get(reporter).click();
         cy.get(reporterNameBabyYoda).click();
         cy.get(priorityLow).click();
-        cy.get(priorityIconLow);
-        cy.get(submitButton).click().wait(8000);
+        cy.get(submitButton).click();
       });
 
     cy.get(createIssueModal).should("not.exist");
@@ -169,28 +164,26 @@ describe("Issue create", () => {
 
     cy.get(backlog)
       .should("be.visible")
+      .and("have.length", 1)
       .within(() => {
         cy.get(listIssue)
           .should("have.length", 5)
           .first()
           .find("p")
-          .click()
-          .within(() => {
-            cy.get(createIssueModal)
-              .should("be.visible")
-              .within(() => {
-                cy.get(titleInput).should("have.value", randomTitle);
-                cy.get(descriptionInput).should(
-                  "contain.text",
-                  randomDescription
-                );
-                cy.get(priorityLow).should("contain.text", "Low");
-                cy.get(reporterNameBabyYoda).should(
-                  "contain.text",
-                  "Baby Yoda"
-                );
-              });
-          });
+          .contains(randomTitle)
+          .contains(issueIconTask)
+          .contains(priorityIconLow);
       });
+
+    cy.get(issueDetails).within(() => {
+      cy.get(issueIconTask).should("be.visible");
+      cy.get(priorityIconLow).should("be.visible");
+      cy.get(reporter).should("have.value", "Baby Yoda");
+      cy.get(issueType).should("have.value", "Task").click();
+      cy.get(reporter).should("have.value", "Baby Yoda");
+      cy.get(title).should("have.text", randomTitle);
+      cy.get(descriptionInput).should("have.text", randomDescription);
+      cy.get(priority).should("have.value", "Low");
+    });
   });
 });
