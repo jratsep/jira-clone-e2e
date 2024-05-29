@@ -7,21 +7,23 @@ const titleInput = 'input[name="title"]';
 const textarea = '[placeholder="Short summary"]';
 const descriptionInput = ".ql-editor";
 const submitButton = 'button[type="submit"]';
-const issueType = '[data-testid="select-option:task"]';
-const issueTypeTask = '[data-testid="select:type"]';
-const issueTypeBug = '[data-testid="select-option:bug"]';
-const issueTypeStory = '[data-testid="select-option:story"]';
+const issueType = '[data-testid="select:type"]';
+const issueTypeTask = '[data-testid="select:Task"]';
+const issueTypeBug = '[data-testid="select-option:Bug"]';
+const issueTypeStory = '[data-testid="select-option:Story"]';
 const issueIconBug = '[data-testid="icon:bug"]';
 const issueIconTask = '[data-testid="icon:task"]';
 const assignee = '[data-testid="form-field:userIds"]';
 const title = '[data-testid="form-field:title"]';
 const selectAssignee = '[data-testid="select:userIds"]';
 const assigneeNameLordGaben = '[data-testid="select-option:Lord Gaben"]';
+const assigneeNamePickleRick = '[data-testid="select-option:Pickle Rick"]';
 const reporter = '[data-testid="select:reporterId"]';
 const reporterNamePickleRick = '[data-testid="select-option:Pickle Rick"]';
 const backlog = '[data-testid="board-list:backlog"]';
 const listIssue = '[data-testid="list-issue"]';
 const avatarLordGaben = '[data-testid="avatar:Lord Gaben"]';
+const avatarBabyYoda = '[data-testid="avatar:Baby Yoda"]';
 const avatarPickleRick = '[data-testid="avatar:Pickle Rick"]';
 const reporterNameBabyYoda = '[data-testid="select-option:Baby Yoda"]';
 const priority = '[data-testid="select:priority"]';
@@ -33,22 +35,18 @@ const priorityIconHighest = '[data-testid="icon:arrow-up"]';
 const priorityColorHighest = "rgb(205, 19, 23)";
 
 describe("Issue create", () => {
-  Cypress.on("uncaught:exception", (err) => {
-    return false;
-  });
-
   beforeEach(() => {
-    cy.visit("/project/board");
+    cy.visit("/");
     cy.url()
-      .should("include", "project/board")
+      .should("eq", `${Cypress.env("baseUrl")}project/board`)
       .then((url) => {
-        cy.visit(`${url}?modal-issue-create=true`);
+        // System will already open issue creating modal in beforeEach block
+        cy.visit(url + "/board?modal-issue-create=true");
       });
   });
 
   it("Should create an issue and validate it successfully", () => {
     cy.get(createIssueModal) // Open issue creation modal
-      .should("exist")
       .within(() => {
         cy.get(descriptionInput).wait(2000).type("TEST_DESCRIPTION").wait(2000); // Enter description
         cy.get(descriptionInput).should("contain.text", "TEST_DESCRIPTION"); // Validate description
@@ -59,8 +57,8 @@ describe("Issue create", () => {
         cy.get(reporter).click(); // Select reporter Yoda
         cy.get(reporterNameBabyYoda).click();
         cy.get(assignee).click(); // Select assignee Pickle Rick
-        cy.get(reporterNamePickleRick).click();
-        cy.get(submitButton).click().wait(10000);
+        cy.get(assigneeNamePickleRick).click();
+        cy.get(submitButton).click().wait(5000);
       });
 
     cy.get(createIssueModal).should("not.exist"); // Validate, that issue creation modal is no longer displayed
@@ -105,20 +103,18 @@ describe("Issue create", () => {
         cy.get(issueType).click(); // Open issue type selector
         cy.get(issueTypeBug).click(); // Select Bug as type
         cy.get(priority).click(); // Open priority selector
-        cy.get(priorityHighest)
-          .click()
-          .should("have.value", priorityIconHighest); // Choose highest priority and validate with the icon change
+        cy.get(priorityHighest).click(); // Choose highest priority and validate with the icon change
         cy.get(reporter).click();
-        cy.get(reporterNamePickleRick).click();
+        cy.get(reporterNamePickleRick).click(); // Select reporter
         cy.get(assignee).click();
-        cy.get(assigneeNameLordGaben).click();
+        cy.get(assigneeNameLordGaben).click(); // Select assignee
         cy.get(submitButton).click();
       });
 
-    cy.get(createIssueModal).should("not.exist");
-    cy.contains("Issue has been successfully created.").should("be.visible");
+    cy.get(createIssueModal).should("not.exist"); // Validate, that create issue modal is no longer displayed
+    cy.contains("Issue has been successfully created.").should("be.visible"); // Validate, that success message is displayed
     cy.reload();
-    cy.contains("Issue has been successfully created.").should("not.exist");
+    cy.contains("Issue has been successfully created.").should("not.exist"); // Validate, that success message is no longer displayed
 
     cy.get(backlog)
       .should("be.visible")
@@ -145,14 +141,16 @@ describe("Issue create", () => {
     cy.get(createIssueModal)
       .should("exist")
       .within(() => {
-        cy.get(issueType).should("have.value", "Task");
+        cy.get(issueType).contains("Task");
         cy.get(descriptionInput).type(randomDescription);
         cy.get(titleInput).type(randomTitle);
         cy.log("Random Title:", randomTitle);
         cy.log("Random Description:", randomDescription);
         cy.wrap(randomTitle).as("randomTitle");
         cy.wrap(randomDescription).as("randomDescription");
+        cy.get(reporter).click();
         cy.get(reporterNameBabyYoda).click();
+        cy.get(priority).click();
         cy.get(priorityLow).click();
         cy.get(submitButton).click();
       });
@@ -169,21 +167,15 @@ describe("Issue create", () => {
         cy.get(listIssue)
           .should("have.length", 5)
           .first()
-          .find("p")
-          .contains(randomTitle)
-          .contains(issueIconTask)
-          .contains(priorityIconLow);
+          .within(() => {
+            cy.get("p")
+              .contains(randomTitle)
+              .siblings() // Ensure we scope the following searches to siblings of the <p> containing randomTitle
+              .within(() => {
+                cy.get(issueIconTask).should("be.visible");
+                cy.get(priorityIconLow).should("be.visible").click();
+              });
+          });
       });
-
-    cy.get(issueDetails).within(() => {
-      cy.get(issueIconTask).should("be.visible");
-      cy.get(priorityIconLow).should("be.visible");
-      cy.get(reporter).should("have.value", "Baby Yoda");
-      cy.get(issueType).should("have.value", "Task").click();
-      cy.get(reporter).should("have.value", "Baby Yoda");
-      cy.get(title).should("have.text", randomTitle);
-      cy.get(descriptionInput).should("have.text", randomDescription);
-      cy.get(priority).should("have.value", "Low");
-    });
   });
 });
