@@ -13,6 +13,7 @@ const title = '[data-testid="form-field:title"]';
 const backlog = '[data-testid="board-list:backlog"]';
 const listIssue = '[data-testid="list-issue"]';
 const iconTrash = '[data-testid="icon:trash"]';
+const iconClose = '[class="sc-bdVaJa fuyACr"]';
 const buttonDelete = '[data-testid="button:delete-issue"]';
 
 describe("Deleting issues", () => {
@@ -38,8 +39,7 @@ describe("Deleting issues", () => {
         );
 
         // Step 2: Open the first issue and perform deletion
-        cy.get(listIssue).first(); // Ensure clicking the first issue to open the details modal
-
+        cy.get(listIssue).first();
         cy.get(issueDetails)
           .should("be.visible")
           .within(() => {
@@ -82,7 +82,7 @@ describe("Deleting issues", () => {
       .then((initialLength) => {
         cy.log(`Initial issue count: ${initialLength}`);
 
-        // Step 2: Open the first issue
+        // Step 1: Open the first issue
         cy.get(listIssue).first(); // Ensure clicking the first issue to open the details modal
 
         cy.get(issueDetails)
@@ -91,18 +91,22 @@ describe("Deleting issues", () => {
             cy.get(iconTrash).click();
           });
 
-        // Step 3: Open the confirmation modal, click Delete issue, then click Cancel
+        // Step 2: Open the confirmation modal, verify Delete button exists but click Cancel button
         cy.get(confirmModal)
           .should("be.visible")
           .within(() => {
-            cy.get("button").contains("Delete issue").click();
+            cy.get("button").contains("Delete issue").should("be.visible");
             cy.get("button").contains("Cancel").click();
           });
 
         // Step 4: Verify issue details and confirmation modals are closed
         cy.get(confirmModal).should("not.exist");
-        cy.get(issueDetails).should("not.exist");
+        cy.get(issueDetails).within(() => {
+          cy.get(iconClose).click().wait(2000);
+        });
+
         cy.get(backlog).should("exist");
+        cy.get(issueDetails).should("not.exist");
         cy.reload();
 
         // Step 5: Count the number of entries in the backlog after canceling deletion, should equal initial count
