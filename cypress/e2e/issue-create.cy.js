@@ -138,19 +138,19 @@ describe("Issue create", () => {
     const randomTitle = faker.lorem.words(2);
     const randomDescription = faker.lorem.words(5);
 
-    cy.get(createIssueModal)
+    cy.get(createIssueModal) //Open issue creation modal and verify it is visible
       .should("exist")
       .within(() => {
-        cy.get(issueType).contains("Task");
-        cy.get(descriptionInput).type(randomDescription);
-        cy.get(titleInput).type(randomTitle);
-        cy.log("Random Title:", randomTitle);
+        cy.get(issueType).contains("Task"); // Verify that the issue type is Task
+        cy.get(descriptionInput).type(randomDescription); // Enter issue description and validate
+        cy.get(titleInput).type(randomTitle); // Enter issue title and validate
+        cy.log("Random Title:", randomTitle); // Log title and description for later validation
         cy.log("Random Description:", randomDescription);
         cy.wrap(randomTitle).as("randomTitle");
         cy.wrap(randomDescription).as("randomDescription");
-        cy.get(reporter).click();
+        cy.get(reporter).click(); // Choose reporter
         cy.get(reporterNameBabyYoda).click();
-        cy.get(priority).click();
+        cy.get(priority).click(); // Choose priority
         cy.get(priorityLow).click();
         cy.get(submitButton).click();
       });
@@ -160,15 +160,15 @@ describe("Issue create", () => {
     cy.reload();
     cy.contains("Issue has been successfully created.").should("not.exist");
 
-    cy.get(backlog)
+    cy.get(backlog) // Open backlog
       .should("be.visible")
       .and("have.length", 1)
       .within(() => {
-        cy.get(listIssue)
+        cy.get(listIssue) // Open first issue from the backlog
           .should("have.length", 5)
           .first()
           .within(() => {
-            cy.get("p")
+            cy.get("p") // Find the title of the first issue
               .contains(randomTitle)
               .siblings() // Ensure we scope the following searches to siblings of the <p> containing randomTitle
               .within(() => {
