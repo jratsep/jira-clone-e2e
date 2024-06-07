@@ -1,8 +1,42 @@
+import { faker } from "@faker-js/faker";
+
+const createIssueModal = '[data-testid="modal:issue-create"]';
+const issueDetails = '[data-testid="modal:issue-details"]';
+const confirmModal = '[data-testid="modal:confirm"]';
+const titleInput = 'input[name="title"]';
+const textarea = '[placeholder="Short summary"]';
+const descriptionInput = ".ql-editor";
+const submitButton = 'button[type="submit"]';
+const issueType = '[data-testid="select:type"]';
+const issueTypeTask = '[data-testid="select:Task"]';
+const issueTypeBug = '[data-testid="select-option:Bug"]';
+const issueTypeStory = '[data-testid="select-option:Story"]';
+const issueIconBug = '[data-testid="icon:bug"]';
+const issueIconTask = '[data-testid="icon:task"]';
+const assignee = '[data-testid="form-field:userIds"]';
+const title = '[data-testid="form-field:title"]';
+const selectAssignee = '[data-testid="select:userIds"]';
+const assigneeNameLordGaben = '[data-testid="select-option:Lord Gaben"]';
+const assigneeNamePickleRick = '[data-testid="select-option:Pickle Rick"]';
+const reporter = '[data-testid="select:reporterId"]';
+const reporterNamePickleRick = '[data-testid="select-option:Pickle Rick"]';
+const backlog = '[data-testid="board-list:backlog"]';
+const listIssue = '[data-testid="list-issue"]';
+const avatarLordGaben = '[data-testid="avatar:Lord Gaben"]';
+const avatarBabyYoda = '[data-testid="avatar:Baby Yoda"]';
+const avatarPickleRick = '[data-testid="avatar:Pickle Rick"]';
+const reporterNameBabyYoda = '[data-testid="select-option:Baby Yoda"]';
+const priority = '[data-testid="select:priority"]';
+const priorityLow = '[data-testid="select-option:Low"]';
+const priorityIconLow = '[data-testid="icon:arrow-down"]';
+const priorityColorLow = "rgb(45, 135, 56)";
+const priorityHighest = '[data-testid="select-option:Highest"]';
+const priorityIconHighest = '[data-testid="icon:arrow-up"]';
+const priorityColorHighest = "rgb(205, 19, 23)";
+
 class IssueModal {
   constructor() {
     this.submitButton = 'button[type="submit"]';
-    this.issueModal = '[data-testid="modal:issue-create"]';
-    this.issueDetailModal = '[data-testid="modal:issue-details"]';
     this.title = 'input[name="title"]';
     this.issueType = '[data-testid="select:type"]';
     this.descriptionField = ".ql-editor";
@@ -14,6 +48,25 @@ class IssueModal {
     this.cancelDeletionButtonName = "Cancel";
     this.confirmationPopup = '[data-testid="modal:confirm"]';
     this.closeDetailModalButton = '[data-testid="icon:close"]';
+    this.issueModal = '[data-testid="modal:issue-create"]';
+    this.issueDetailModal = '[data-testid="modal:issue-details"]';
+
+    this.issueCommentsList = '[data-testid="issue-comment"]';
+    this.CommentEntryField = 'textarea[placeholder="Add a comment..."]';
+    this.addCommentField = "Add a comment...";
+    this.editCommentButton = "Edit";
+    this.saveCommentButtonName = "Save";
+    this.commentDelete = "Delete";
+    this.commentDeleteConfirmationPopup = '[data-testid="modal:confirm"]';
+    this.commentDeleteConfirm = "Delete comment";
+  }
+
+  getFirstListIssue() {
+    return cy
+      .get(this.issuesList)
+      .first()
+      .scrollIntoView()
+      .click({ force: true });
   }
 
   getIssueModal() {
@@ -23,7 +76,51 @@ class IssueModal {
   getIssueDetailModal() {
     return cy.get(this.issueDetailModal);
   }
+  addComment(comment) {
+    this.getIssueDetailModal()
+      .should("be.visible")
+      .within(() => {
+        cy.contains(this.addCommentField).click();
+        cy.get(this.CommentEntryField).type(comment);
+        cy.contains(this.saveCommentButtonName).click().should("not.exist");
+        cy.contains(this.addCommentField).should("exist");
+        cy.get(this.issueCommentsList).should("contain", comment);
+      });
+  }
+  editComment(comment, editedComment) {
+    this.getIssueDetailModal().within(() => {
+      cy.get(this.issueCommentsList)
+        .first()
+        .contains(this.editCommentButton)
+        .click()
+        .should("not.exist");
+      cy.get(this.CommentEntryField)
+        .should("contain", comment)
+        .clear()
+        .type(editedComment);
+      cy.contains(this.saveCommentButtonName).click().should("not.exist");
 
+      cy.get(this.issueCommentsList)
+        .should("contain", this.editCommentButton)
+        .and("contain", editedComment);
+    });
+  }
+
+  deleteComment(editedComment) {
+    this.getIssueDetailModal().within(() => {
+      cy.get(this.issueCommentsList).contains(this.commentDelete).click();
+    });
+    cy.get(this.commentDeleteConfirmationPopup)
+      .should("be.visible")
+      .within(() => {
+        cy.contains("button", this.commentDeleteConfirm)
+          .click()
+          .should("not.exist");
+      });
+    cy.get(this.getIssueDetailModal).within(() => {
+      cy.get(editedComment).should("not.exist");
+    });
+  }
   selectIssueType(issueType) {
     cy.get(this.issueType).click("bottomRight");
     cy.get(`[data-testid="select-option:${issueType}"]`)
@@ -37,7 +134,7 @@ class IssueModal {
   }
 
   editTitle(title) {
-    cy.get(this.title).debounced("type", title);
+    cy.get(this.title).clear().type(title);
   }
 
   editDescription(description) {
@@ -87,17 +184,22 @@ class IssueModal {
   }
 
   validateAmountOfIssuesInBacklog(amountOfIssues) {
-    cy.get('[data-testid="board-list:backlog"]').within(() => {
-      cy.get('[data-testid="list-issue"]').should(
-        "have.length",
-        amountOfIssues
-      );
+    cy.get(this.backlogList).within(() => {
+      cy.get(this.issuesList).should("have.length", amountOfIssues);
     });
+  }
+
+  ensureCommentWasCreatedForIssue(issueTitle) {
+    cy.get(this.issueCommentsList).should("have.value", issueTitle);
   }
 
   clickDeleteButton() {
     cy.get(this.deleteButton).click();
     cy.get(this.confirmationPopup).should("be.visible");
+  }
+
+  clickCommentSaveButton() {
+    cy.get(this.saveCommentButtonName).click();
   }
 
   confirmDeletion() {

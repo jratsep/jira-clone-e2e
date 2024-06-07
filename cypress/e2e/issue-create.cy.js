@@ -137,7 +137,7 @@ describe("Issue create", () => {
   it("Should create an issue with random data and verify data retention", () => {
     const randomTitle = faker.lorem.words(2);
     const randomDescription = faker.lorem.words(5);
-
+    const randomComment = faker.lorem.words(15);
     cy.get(createIssueModal) //Open issue creation modal and verify it is visible
       .should("exist")
       .within(() => {
