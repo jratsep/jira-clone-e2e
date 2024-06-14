@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 
+// Constants for selectors and data attributes
 const createIssueModal = '[data-testid="modal:issue-create"]';
 const issueDetails = '[data-testid="modal:issue-details"]';
 const confirmModal = '[data-testid="modal:confirm"]';
@@ -48,17 +49,30 @@ class IssueModal {
     this.cancelDeletionButtonName = "Cancel";
     this.confirmationPopup = '[data-testid="modal:confirm"]';
     this.closeDetailModalButton = '[data-testid="icon:close"]';
+
     this.issueModal = '[data-testid="modal:issue-create"]';
     this.issueDetailModal = '[data-testid="modal:issue-details"]';
 
     this.issueCommentsList = '[data-testid="issue-comment"]';
-    this.CommentEntryField = 'textarea[placeholder="Add a comment..."]';
+    this.commentEntryField = 'textarea[placeholder="Add a comment..."]';
     this.addCommentField = "Add a comment...";
     this.editCommentButton = "Edit";
     this.saveCommentButtonName = "Save";
     this.commentDelete = "Delete";
     this.commentDeleteConfirmationPopup = '[data-testid="modal:confirm"]';
     this.commentDeleteConfirm = "Delete comment";
+    this.estimateField = 'input[placeholder="Number"]';
+    this.timeTrackerStopwatch = '[data-testid="icon:stopwatch"]';
+  }
+
+  createIssue(issueDetails) {
+    this.getIssueModal().within(() => {
+      this.selectIssueType(issueDetails.type);
+      this.editDescription(issueDetails.description);
+      this.editTitle(issueDetails.title);
+      this.selectAssignee(issueDetails.assignee);
+      cy.get(this.submitButton).click();
+    });
   }
 
   getFirstListIssue() {
@@ -76,79 +90,16 @@ class IssueModal {
   getIssueDetailModal() {
     return cy.get(this.issueDetailModal);
   }
-  addComment(comment) {
-    this.getIssueDetailModal()
-      .should("be.visible")
-      .within(() => {
-        cy.contains(this.addCommentField).click();
-        cy.get(this.CommentEntryField).type(comment);
-        cy.contains(this.saveCommentButtonName).click().should("not.exist");
-        cy.contains(this.addCommentField).should("exist");
-        cy.get(this.issueCommentsList).should("contain", comment);
-      });
-  }
-  editComment(comment, editedComment) {
+
+  addEstimation(issueDetails) {
+    this.getFirstListIssue();
     this.getIssueDetailModal().within(() => {
-      cy.get(this.issueCommentsList)
-        .first()
-        .contains(this.editCommentButton)
-        .click()
-        .should("not.exist");
-      cy.get(this.CommentEntryField)
-        .should("contain", comment)
-        .clear()
-        .type(editedComment);
-      cy.contains(this.saveCommentButtonName).click().should("not.exist");
-
-      cy.get(this.issueCommentsList)
-        .should("contain", this.editCommentButton)
-        .and("contain", editedComment);
+      cy.get(this.timeTrackerStopwatch).next().contains("No time logged");
+      cy.get(this.estimateField)
+        .type(issueDetails.estimatedTime)
+        .should("have.attr", "value", issueDetails.estimatedTime);
     });
-  }
-
-  deleteComment(editedComment) {
-    this.getIssueDetailModal().within(() => {
-      cy.get(this.issueCommentsList).contains(this.commentDelete).click();
-    });
-    cy.get(this.commentDeleteConfirmationPopup)
-      .should("be.visible")
-      .within(() => {
-        cy.contains("button", this.commentDeleteConfirm)
-          .click()
-          .should("not.exist");
-      });
-    cy.get(this.getIssueDetailModal).within(() => {
-      cy.get(editedComment).should("not.exist");
-    });
-  }
-  selectIssueType(issueType) {
-    cy.get(this.issueType).click("bottomRight");
-    cy.get(`[data-testid="select-option:${issueType}"]`)
-      .trigger("mouseover")
-      .trigger("click");
-  }
-
-  selectAssignee(assigneeName) {
-    cy.get(this.assignee).click("bottomRight");
-    cy.get(`[data-testid="select-option:${assigneeName}"]`).click();
-  }
-
-  editTitle(title) {
-    cy.get(this.title).clear().type(title);
-  }
-
-  editDescription(description) {
-    cy.get(this.descriptionField).type(description);
-  }
-
-  createIssue(issueDetails) {
-    this.getIssueModal().within(() => {
-      this.selectIssueType(issueDetails.type);
-      this.editDescription(issueDetails.description);
-      this.editTitle(issueDetails.title);
-      this.selectAssignee(issueDetails.assignee);
-      cy.get(this.submitButton).click();
-    });
+    cy.log("Estimation added");
   }
 
   ensureIssueIsCreated(expectedAmountIssues, issueDetails) {
@@ -158,7 +109,7 @@ class IssueModal {
 
     cy.get(this.backlogList)
       .should("be.visible")
-      .and("have.length", "1")
+      .and("have.length", 1)
       .within(() => {
         cy.get(this.issuesList)
           .should("have.length", expectedAmountIssues)
@@ -190,7 +141,74 @@ class IssueModal {
   }
 
   ensureCommentWasCreatedForIssue(issueTitle) {
-    cy.get(this.issueCommentsList).should("have.value", issueTitle);
+    cy.get(this.issueCommentsList).should("contain.text", issueTitle);
+  }
+
+  addComment(comment) {
+    this.getIssueDetailModal()
+      .should("be.visible")
+      .within(() => {
+        cy.contains(this.addCommentField).click();
+        cy.get(this.commentEntryField).type(comment);
+        cy.contains(this.saveCommentButtonName).click().should("not.exist");
+        cy.contains(this.addCommentField).should("exist");
+        cy.get(this.issueCommentsList).should("contain", comment);
+      });
+  }
+
+  editComment(comment, editedComment) {
+    this.getIssueDetailModal().within(() => {
+      cy.get(this.issueCommentsList)
+        .first()
+        .contains(this.editCommentButton)
+        .click()
+        .should("not.exist");
+      cy.get(this.commentEntryField)
+        .should("contain", comment)
+        .clear()
+        .type(editedComment);
+      cy.contains(this.saveCommentButtonName).click().should("not.exist");
+
+      cy.get(this.issueCommentsList)
+        .should("contain", this.editCommentButton)
+        .and("contain", editedComment);
+    });
+  }
+
+  deleteComment(editedComment) {
+    this.getIssueDetailModal().within(() => {
+      cy.get(this.issueCommentsList).contains(this.commentDelete).click();
+    });
+    cy.get(this.commentDeleteConfirmationPopup)
+      .should("be.visible")
+      .within(() => {
+        cy.contains("button", this.commentDeleteConfirm)
+          .click()
+          .should("not.exist");
+      });
+    this.getIssueDetailModal().within(() => {
+      cy.contains(editedComment).should("not.exist");
+    });
+  }
+
+  selectIssueType(issueType) {
+    cy.get(this.issueType).click("bottomRight");
+    cy.get(`[data-testid="select-option:${issueType}"]`)
+      .trigger("mouseover")
+      .trigger("click");
+  }
+
+  selectAssignee(assigneeName) {
+    cy.get(this.assignee).click("bottomRight");
+    cy.get(`[data-testid="select-option:${assigneeName}"]`).click();
+  }
+
+  editTitle(title) {
+    cy.get(this.title).clear().type(title);
+  }
+
+  editDescription(description) {
+    cy.get(this.descriptionField).type(description);
   }
 
   clickDeleteButton() {
@@ -199,7 +217,7 @@ class IssueModal {
   }
 
   clickCommentSaveButton() {
-    cy.get(this.saveCommentButtonName).click();
+    cy.contains(this.saveCommentButtonName).click();
   }
 
   confirmDeletion() {
